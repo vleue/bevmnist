@@ -11,8 +11,6 @@ anyhow = "1.0"
 
 tract-onnx = "0.11.2"
 
-# bevy = { git = "https://github.com/bevyengine/bevy" }
-
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 bevy = { git = "https://github.com/bevyengine/bevy", default-features = false, features = ["bevy_winit", "render"] }
 
