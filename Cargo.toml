@@ -1,0 +1,37 @@
+[package]
+name = "bevmnist"
+version = "0.1.0"
+authors = ["François Mockers <mockersf@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0"
+
+tract-onnx = "0.11.2"
+
+# bevy = { git = "https://github.com/bevyengine/bevy" }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+bevy = { git = "https://github.com/bevyengine/bevy", default-features = false, features = ["bevy_winit", "render"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+bevy = { git = "https://github.com/bevyengine/bevy", default-features = false, features = ["bevy_winit", "render"] }
+bevy_webgl2 = { git = "https://github.com/mrk-its/bevy_webgl2" }
+
+[features]
+default = ["bevy/bevy_wgpu"]
+
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.release]
+lto = true
+opt-level = 3
+incremental = false
+codegen-units = 1
+
+[patch.'https://github.com/bevyengine/bevy']
+bevy = { git = "https://github.com//bevyengine/bevy" }
