@@ -67,7 +67,8 @@ fn main() {
         .run();
 }
 
-const SIZE: u32 = 600;
+const DRAWING_ZONE_SIZE: u32 = 600;
+const INPUT_SIZE: u32 = 28;
 
 #[derive(Default)]
 struct State {
@@ -88,7 +89,7 @@ fn setup(
     let color_none = materials.add(Color::NONE.into());
 
     let drawing_texture = textures.add(Texture::new_fill(
-        Vec2::new(SIZE as f32, SIZE as f32),
+        Vec2::new(DRAWING_ZONE_SIZE as f32, DRAWING_ZONE_SIZE as f32),
         &[0, 0, 0, 255],
         bevy::render::texture::TextureFormat::Rgba8UnormSrgb,
     ));
@@ -109,7 +110,10 @@ fn setup(
             parent
                 .spawn(ImageBundle {
                     style: Style {
-                        size: Size::new(Val::Px(SIZE as f32), Val::Px(SIZE as f32)),
+                        size: Size::new(
+                            Val::Px(DRAWING_ZONE_SIZE as f32),
+                            Val::Px(DRAWING_ZONE_SIZE as f32),
+                        ),
                         ..Default::default()
                     },
                     material: materials.add(drawing_texture.into()),
@@ -122,7 +126,10 @@ fn setup(
                         margin: Rect::all(Val::Auto),
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
-                        size: Size::new(Val::Px(SIZE as f32), Val::Px(SIZE as f32)),
+                        size: Size::new(
+                            Val::Px(DRAWING_ZONE_SIZE as f32),
+                            Val::Px(DRAWING_ZONE_SIZE as f32),
+                        ),
                         ..Default::default()
                     },
                     material: color_none.clone(),
@@ -134,7 +141,7 @@ fn setup(
                             value: "".to_string(),
                             font: asset_server.load("FiraMono-Medium.ttf"),
                             style: TextStyle {
-                                font_size: SIZE as f32,
+                                font_size: DRAWING_ZONE_SIZE as f32,
                                 color: Color::WHITE,
                                 ..Default::default()
                             },
@@ -175,7 +182,7 @@ fn drawing(
                 let texture = textures
                     .get_mut(material.texture.as_ref().unwrap())
                     .unwrap();
-                let pixel_size = SIZE / 28;
+                let pixel_size = DRAWING_ZONE_SIZE / INPUT_SIZE;
                 for i in -(pixel_size as i32 / 2)..(pixel_size as i32 / 2 + 1) {
                     for j in -(pixel_size as i32 / 2)..(pixel_size as i32 / 2 + 1) {
                         set_pixel(x as i32 + i, (texture.size.y - y) as i32 + j, 255, texture);
@@ -243,25 +250,28 @@ fn infer(
         let material = materials.get(mat).unwrap();
         let texture = textures.get(material.texture.as_ref().unwrap()).unwrap();
 
-        let pixel_size = SIZE as i32 / 28;
+        let pixel_size = (DRAWING_ZONE_SIZE / INPUT_SIZE) as i32;
 
-        let image = tract_ndarray::Array4::from_shape_fn((1, 1, 28, 28), |(_, _, y, x)| {
-            let mut val = 0;
-            for i in 0..pixel_size as i32 {
-                for j in 0..pixel_size as i32 {
-                    val += get_pixel(
-                        x as i32 * pixel_size + i,
-                        y as i32 * pixel_size + j,
-                        texture,
-                    ) as i32;
+        let image = tract_ndarray::Array4::from_shape_fn(
+            (1, 1, INPUT_SIZE as usize, INPUT_SIZE as usize),
+            |(_, _, y, x)| {
+                let mut val = 0;
+                for i in 0..pixel_size as i32 {
+                    for j in 0..pixel_size as i32 {
+                        val += get_pixel(
+                            x as i32 * pixel_size + i,
+                            y as i32 * pixel_size + j,
+                            texture,
+                        ) as i32;
+                    }
                 }
-            }
-            if val > pixel_size * pixel_size / 2 {
-                1. as f32
-            } else {
-                0. as f32
-            }
-        })
+                if val > pixel_size * pixel_size / 2 {
+                    1. as f32
+                } else {
+                    0. as f32
+                }
+            },
+        )
         .into();
 
         if let Some(model) = models.get(state.model.as_ref().unwrap()) {
