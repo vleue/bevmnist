@@ -281,6 +281,8 @@ fn infer(
             {
                 if score > 10. {
                     display.iter_mut().next().unwrap().value = format!("{:?}", value);
+                } else {
+                    display.iter_mut().next().unwrap().value = "".to_string();
                 }
             }
         }
