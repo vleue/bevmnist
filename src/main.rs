@@ -22,12 +22,12 @@ pub struct OnnxModelLoader;
 impl AssetLoader for OnnxModelLoader {
     fn load<'a>(
         &'a self,
-        bytes: &'a [u8],
+        mut bytes: &'a [u8],
         load_context: &'a mut LoadContext,
     ) -> BoxedFuture<'a, Result<(), anyhow::Error>> {
         Box::pin(async move {
             let model = tract_onnx::onnx()
-                .model_for_read(&mut bytes.clone())
+                .model_for_read(&mut bytes)
                 .unwrap()
                 .with_input_fact(
                     0,
