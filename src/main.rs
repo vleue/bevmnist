@@ -29,10 +29,6 @@ impl AssetLoader for OnnxModelLoader {
             let model = tract_onnx::onnx()
                 .model_for_read(&mut bytes)
                 .unwrap()
-                .with_input_fact(
-                    0,
-                    InferenceFact::dt_shape(f32::datum_type(), tvec!(1, 1, 28, 28)),
-                )?
                 .into_optimized()?
                 .into_runnable()?;
 
