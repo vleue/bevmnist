@@ -191,10 +191,10 @@ fn drawing(
 }
 
 fn set_pixel(x: i32, y: i32, color: u8, texture: &mut Texture) {
-    if x as f32 > texture.size.x || x < 0 {
+    if x as f32 > texture.size.x - 1. || x < 0 {
         return;
     }
-    if y as f32 > texture.size.y || y < 0 {
+    if y as f32 > texture.size.y - 1. || y < 0 {
         return;
     }
     texture.data[(x as usize + (y as f32 * texture.size.x) as usize) * 4] = color;
@@ -203,10 +203,10 @@ fn set_pixel(x: i32, y: i32, color: u8, texture: &mut Texture) {
 }
 
 fn get_pixel(x: i32, y: i32, texture: &Texture) -> u8 {
-    if x as f32 > texture.size.x || x < 0 {
+    if x as f32 > texture.size.x - 1. || x < 0 {
         return 0;
     }
-    if y as f32 > texture.size.y || y < 0 {
+    if y as f32 > texture.size.y - 1. || y < 0 {
         return 0;
     }
     texture.data[(x as usize + (y as f32 * texture.size.x) as usize) * 4]
