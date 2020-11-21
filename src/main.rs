@@ -217,6 +217,7 @@ fn action(
     materials: Res<Assets<ColorMaterial>>,
     mut textures: ResMut<Assets<Texture>>,
     drawable: Query<&Handle<ColorMaterial>, (With<Interaction>, With<GlobalTransform>)>,
+    mut display: Query<&mut Text>,
 ) {
     if keyboard_input.pressed(KeyCode::Space) {
         for mat in drawable.iter() {
@@ -230,6 +231,7 @@ fn action(
                 }
             }
         }
+        display.iter_mut().next().unwrap().value = "".to_string();
     }
 }
 
@@ -269,7 +271,7 @@ fn infer(
         if let Some(model) = models.get(state.model.as_ref().unwrap()) {
             let result = model.model.run(tvec!(image)).unwrap();
 
-            if let Some((value, _)) = result[0]
+            if let Some((value, score)) = result[0]
                 .to_array_view::<f32>()
                 .unwrap()
                 .iter()
@@ -277,7 +279,9 @@ fn infer(
                 .enumerate()
                 .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
             {
-                display.iter_mut().next().unwrap().value = format!("{:?}", value);
+                if score > 10. {
+                    display.iter_mut().next().unwrap().value = format!("{:?}", value);
+                }
             }
         }
     }
