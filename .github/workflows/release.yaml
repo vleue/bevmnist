@@ -88,11 +88,10 @@ jobs:
           cp -r assets linux/
       - name: windows finish
         if: matrix.target.channel == 'windows'
-        shell: powershell
         run: |
-          New-Item -Path . -Name "windows" -ItemType "directory"
-          Copy-Item "target\${{ matrix.target.target }}\release\${{ env.binary }}".exe -Destination "windows"
-          Copy-Item "assets" -Destination "windows\assets" -Recurse
+          mkdir windows
+          cp target/${{ matrix.target.target }}/release/${{ env.binary }}.exe windows/
+          cp -r assets windows/
       - name: wasm finish
         if: matrix.target.channel == 'wasm'
         run: |
