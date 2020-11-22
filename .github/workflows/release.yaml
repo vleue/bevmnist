@@ -1,0 +1,157 @@
+name: release-flow
+
+on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+*"
+
+env:
+  binary: bevmnist
+  itch_game: bevmnist-poc
+  itch_user: vleue
+
+jobs:
+  release:
+    runs-on: ${{ matrix.target.image_name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - channel: linux
+            image_name: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            extension: zip
+            features: default
+          - channel: wasm
+            image_name: ubuntu-latest
+            target: wasm32-unknown-unknown
+            extension: zip
+            features: wasm_default
+          - channel: macos
+            image_name: macOS-latest
+            target: x86_64-apple-darwin
+            extension: dmg
+            features: default
+          - channel: windows
+            image_name: windows-latest
+            target: x86_64-pc-windows-msvc
+            extension: zip
+            features: default
+    steps:
+      - uses: little-core-labs/get-git-tag@v3.0.1
+        id: get_version
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target.target }}
+          override: true
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ matrix.target.channel }}-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: macOS setup
+        if: matrix.target.channel == 'macos'
+        run: |
+          export CFLAGS="-fno-stack-check"
+          export MACOSX_DEPLOYMENT_TARGET="10.9"
+      - name: linux setup
+        if: matrix.target.channel == 'linux'
+        run: |
+          sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
+      - name: wasm setup
+        if: matrix.target.channel == 'wasm'
+        run: |
+          cargo install wasm-bindgen-cli
+
+      - name: build
+        run: |
+          cargo build --release --target ${{ matrix.target.target }} --no-default-features --features=${{ matrix.target.features}}
+
+      - name: macOS finish
+        if: matrix.target.channel == 'macos'
+        run: |
+          mkdir -p ${{ env.binary }}.app/Contents/MacOS
+          cp target/${{ matrix.target.target }}/release/${{ env.binary }} ${{ env.binary }}.app/Contents/MacOS/
+          strip ${{ env.binary }}.app/Contents/MacOS/${{ env.binary }}
+      - name: linux finish
+        if: matrix.target.channel == 'linux'
+        run: |
+          strip target/${{ matrix.target.target }}/release/${{ env.binary }}
+      - name: wasm finish
+        if: matrix.target.channel == 'wasm'
+        run: |
+          wasm-bindgen --no-typescript --out-name ${{ env.binary }} --out-dir wasm --target web target/${{ matrix.target.target }}/release/${{ env.binary }}.wasm
+
+      - name: macOS packaging
+        if: matrix.target.channel == 'macos'
+        run: |
+          hdiutil create -fs HFS+ -volname "${{ env.binary }}" -srcfolder ${{ env.binary }}.app ${{ env.binary }}.${{ matrix.target.extension }}
+      - name: linux packaging
+        if: matrix.target.channel == 'linux'
+        uses: papeloto/action-zip@v1
+        with:
+          files: target/${{ matrix.target.target }}/release/${{ env.binary }}
+          dest: ${{ env.binary }}.${{ matrix.target.extension }}
+      - name: windows packaging
+        if: matrix.target.channel == 'windows'
+        uses: papeloto/action-zip@v1
+        with:
+          files: target/${{ matrix.target.target }}/release/${{ env.binary }}.exe
+          dest: ${{ env.binary }}.${{ matrix.target.extension }}
+      - name: wasm packaging
+        if: matrix.target.channel == 'wasm'
+        uses: papeloto/action-zip@v1
+        with:
+          files: wasm
+          dest: ${{ env.binary }}.${{ matrix.target.extension }}
+
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ env.binary }}.${{ matrix.target.extension }}
+          asset_name: ${{ env.binary }}-${{ matrix.target.channel }}-${{ steps.get_version.outputs.tag }}.${{ matrix.target.extension }}
+          tag: ${{ github.ref }}
+          overwrite: true
+
+      - name: save artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: ${{ matrix.target.channel }}-release
+          path: ${{ env.binary }}.${{ matrix.target.extension }}
+
+  publish-itchio:
+    needs: ["release"]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - channel: linux
+            extension: zip
+          - channel: wasm
+            extension: zip
+          - channel: macos
+            extension: dmg
+          - channel: windows
+            extension: zip
+    steps:
+      - uses: little-core-labs/get-git-tag@v3.0.1
+        id: get_version
+      - name: Download last release
+        uses: actions/download-artifact@v1
+        with:
+          name: ${{ matrix.target.channel }}-release
+      - uses: josephbmanley/butler-publish-itchio-action@v1.0.2
+        env:
+          BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
+          CHANNEL: ${{ matrix.target.channel }}
+          ITCH_GAME: ${{ env.itch_game }}
+          ITCH_USER: ${{ env.itch_user }}
+          PACKAGE: ${{ matrix.target.channel }}-release/${{ env.binary }}.${{ matrix.target.extension }}
+          VERSION: ${{ steps.get_version.outputs.tag }}

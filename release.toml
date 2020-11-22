@@ -1,0 +1,6 @@
+pre-release-commit-message=":rocket: version {{version}}"
+post-release-commit-message=":construction: start next development iteration {{next_version}}"
+tag-prefix=""
+tag-name="{{prefix}}{{version}}"
+tag-message=":bookmark: {{version}}"
+dev-version-ext="dev"
