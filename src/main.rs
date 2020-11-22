@@ -165,6 +165,7 @@ fn setup(
 
 fn drawing_mouse(
     (mut reader, events): (Local<EventReader<CursorMoved>>, Res<Events<CursorMoved>>),
+    mut last_mouse_position: Local<Option<Vec2>>,
     mut texture_events: ResMut<Events<Event>>,
     drawable: Query<(&Interaction, &GlobalTransform, &Style)>,
 ) {
@@ -181,10 +182,27 @@ fn drawing_mouse(
                 0.
             };
             for event in reader.iter(&events) {
-                let x = event.position.x - transform.translation.x + width / 2.;
-                let y = event.position.y - transform.translation.y + height / 2.;
-                texture_events.send(Event::Draw(x as i32, y as i32));
+                if let Some(last_mouse_position) = *last_mouse_position {
+                    let steps =
+                        (last_mouse_position.distance(event.position) as u32 / INPUT_SIZE + 1) * 2;
+                    for i in 0..steps {
+                        let lerped =
+                            last_mouse_position.lerp(event.position, i as f32 / steps as f32);
+                        let x = lerped.x - transform.translation.x + width / 2.;
+                        let y = lerped.y - transform.translation.y + height / 2.;
+
+                        texture_events.send(Event::Draw(x as i32, y as i32));
+                    }
+                } else {
+                    let x = event.position.x - transform.translation.x + width / 2.;
+                    let y = event.position.y - transform.translation.y + height / 2.;
+                    texture_events.send(Event::Draw(x as i32, y as i32));
+                }
+
+                *last_mouse_position = Some(event.position);
             }
+        } else {
+            *last_mouse_position = None;
         }
     }
 }
