@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity)]
+
 use bevy::{
     asset::{AssetLoader, LoadContext, LoadedAsset},
     prelude::*,
@@ -7,7 +9,7 @@ use bevy::{
 use tract_onnx::prelude::*;
 
 #[derive(Debug, TypeUuid)]
-#[uuid = "39cadc56-aa9c-4543-8640-a018b7fff052"]
+#[uuid = "578fae90-a8de-41ab-a4dc-3aca66a31eed"]
 pub struct OnnxModel {
     pub model: SimplePlan<
         TypedFact,
