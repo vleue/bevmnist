@@ -46,7 +46,7 @@ impl AssetLoader for OnnxModelLoader {
 }
 
 enum Event {
-    Draw(i32, i32),
+    Draw(Vec2),
     Clear,
 }
 
@@ -191,12 +191,12 @@ fn drawing_mouse(
                         let x = lerped.x - transform.translation.x + width / 2.;
                         let y = lerped.y - transform.translation.y + height / 2.;
 
-                        texture_events.send(Event::Draw(x as i32, y as i32));
+                        texture_events.send(Event::Draw(Vec2::new(x, y)));
                     }
                 } else {
                     let x = event.position.x - transform.translation.x + width / 2.;
                     let y = event.position.y - transform.translation.y + height / 2.;
-                    texture_events.send(Event::Draw(x as i32, y as i32));
+                    texture_events.send(Event::Draw(Vec2::new(x, y)));
                 }
 
                 *last_mouse_position = Some(event.position);
@@ -226,7 +226,7 @@ fn drawing_touch(
         for event in reader.iter(&events) {
             let x = event.position.x - transform.translation.x + width / 2.;
             let y = event.position.y - transform.translation.y + height / 2.;
-            texture_events.send(Event::Draw(x as i32, y as i32));
+            texture_events.send(Event::Draw(Vec2::new(x, y)));
         }
     }
 }
@@ -259,11 +259,19 @@ fn update_texture(
             .unwrap();
 
         match event {
-            Event::Draw(x, y) => {
-                let pixel_size = DRAWING_ZONE_SIZE / INPUT_SIZE;
-                for i in -(pixel_size as i32 / 2)..(pixel_size as i32 / 2 + 1) {
-                    for j in -(pixel_size as i32 / 2)..(pixel_size as i32 / 2 + 1) {
-                        set_pixel(x + i, (texture.size.y as i32 - y) + j, 255, texture);
+            Event::Draw(pos) => {
+                let radius = (DRAWING_ZONE_SIZE / INPUT_SIZE / 2) as i32;
+                for i in -radius..(radius + 1) {
+                    for j in -radius..(radius + 1) {
+                        let target_point = Vec2::new(pos.x + i as f32, pos.y + j as f32);
+                        if pos.distance(target_point) < radius as f32 {
+                            set_pixel(
+                                target_point.x as i32,
+                                (texture.size.y - target_point.y) as i32,
+                                255,
+                                texture,
+                            )
+                        }
                     }
                 }
             }
