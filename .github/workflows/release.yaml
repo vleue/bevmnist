@@ -26,7 +26,7 @@ jobs:
             image_name: ubuntu-latest
             target: wasm32-unknown-unknown
             extension: zip
-            features: wasm_default
+            features: web
           - channel: macos
             image_name: macOS-latest
             target: x86_64-apple-darwin
@@ -62,7 +62,7 @@ jobs:
       - name: linux setup
         if: matrix.target.channel == 'linux'
         run: |
-          sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
+          sudo apt-get update; sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
       - name: wasm setup
         if: matrix.target.channel == 'wasm'
         run: |
@@ -88,10 +88,11 @@ jobs:
           cp -r assets linux/
       - name: windows finish
         if: matrix.target.channel == 'windows'
+        shell: powershell
         run: |
-          mkdir windows
-          cp target/${{ matrix.target.target }}/release/${{ env.binary }} windows/
-          cp -r assets windows/
+          New-Item -Path . -Name "windows" -ItemType "directory"
+          Copy-Item "target\${{ matrix.target.target }}\release\${{ env.binary }}".exe -Destination "windows"
+          Copy-Item "assets" -Destination "windows\assets" -Recurse
       - name: wasm finish
         if: matrix.target.channel == 'wasm'
         run: |

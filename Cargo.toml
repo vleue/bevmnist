@@ -22,7 +22,7 @@ bevy_webgl2 = { git = "https://github.com/mrk-its/bevy_webgl2" }
 
 [features]
 default = ["bevy/bevy_wgpu"]
-
+web = []
 
 [profile.dev.package."*"]
 opt-level = 3
