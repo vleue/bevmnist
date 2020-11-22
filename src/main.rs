@@ -42,6 +42,11 @@ impl AssetLoader for OnnxModelLoader {
     }
 }
 
+enum Event {
+    Draw(i32, i32),
+    Clear,
+}
+
 fn main() {
     let mut builder = App::build();
     builder
@@ -60,9 +65,12 @@ fn main() {
         .add_asset::<OnnxModel>()
         .init_asset_loader::<OnnxModelLoader>()
         .init_resource::<State>()
+        .add_event::<Event>()
         .add_startup_system(setup)
-        .add_system(drawing)
-        .add_system(action)
+        .add_system(drawing_mouse)
+        .add_system(drawing_touch)
+        .add_system(clear_action)
+        .add_system(update_texture)
         .add_system(infer)
         .run();
 }
@@ -152,18 +160,12 @@ fn setup(
         });
 }
 
-fn drawing(
+fn drawing_mouse(
     (mut reader, events): (Local<EventReader<CursorMoved>>, Res<Events<CursorMoved>>),
-    materials: Res<Assets<ColorMaterial>>,
-    mut textures: ResMut<Assets<Texture>>,
-    drawable: Query<(
-        &Interaction,
-        &GlobalTransform,
-        &Style,
-        &Handle<ColorMaterial>,
-    )>,
+    mut texture_events: ResMut<Events<Event>>,
+    drawable: Query<(&Interaction, &GlobalTransform, &Style)>,
 ) {
-    for (interaction, transform, style, mat) in drawable.iter() {
+    for (interaction, transform, style) in drawable.iter() {
         if let Interaction::Clicked = interaction {
             let width = if let Val::Px(x) = style.size.width {
                 x
@@ -178,14 +180,76 @@ fn drawing(
             for event in reader.iter(&events) {
                 let x = event.position.x - transform.translation.x + width / 2.;
                 let y = event.position.y - transform.translation.y + height / 2.;
-                let material = materials.get(mat).unwrap();
-                let texture = textures
-                    .get_mut(material.texture.as_ref().unwrap())
-                    .unwrap();
+                texture_events.send(Event::Draw(x as i32, y as i32));
+            }
+        }
+    }
+}
+
+fn drawing_touch(
+    (mut reader, events): (Local<EventReader<TouchInput>>, Res<Events<TouchInput>>),
+    mut texture_events: ResMut<Events<Event>>,
+    drawable: Query<(&GlobalTransform, &Style), With<Interaction>>,
+) {
+    for (transform, style) in drawable.iter() {
+        let width = if let Val::Px(x) = style.size.width {
+            x
+        } else {
+            0.
+        };
+        let height = if let Val::Px(x) = style.size.height {
+            x
+        } else {
+            0.
+        };
+        for event in reader.iter(&events) {
+            let x = event.position.x - transform.translation.x + width / 2.;
+            let y = event.position.y - transform.translation.y + height / 2.;
+            texture_events.send(Event::Draw(x as i32, y as i32));
+        }
+    }
+}
+
+fn clear_action(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut texture_events: ResMut<Events<Event>>,
+    mut display: Query<&mut Text>,
+) {
+    if keyboard_input.pressed(KeyCode::Space) {
+        texture_events.send(Event::Clear);
+        display.iter_mut().next().unwrap().value = "".to_string();
+    }
+}
+
+fn update_texture(
+    (mut reader, events): (Local<EventReader<Event>>, Res<Events<Event>>),
+    materials: Res<Assets<ColorMaterial>>,
+    mut textures: ResMut<Assets<Texture>>,
+    drawable: Query<
+        &Handle<ColorMaterial>,
+        (With<Style>, With<GlobalTransform>, With<Interaction>),
+    >,
+) {
+    for event in reader.iter(&events) {
+        let mat = drawable.iter().next().unwrap();
+        let material = materials.get(mat).unwrap();
+        let texture = textures
+            .get_mut(material.texture.as_ref().unwrap())
+            .unwrap();
+
+        match event {
+            Event::Draw(x, y) => {
                 let pixel_size = DRAWING_ZONE_SIZE / INPUT_SIZE;
                 for i in -(pixel_size as i32 / 2)..(pixel_size as i32 / 2 + 1) {
                     for j in -(pixel_size as i32 / 2)..(pixel_size as i32 / 2 + 1) {
-                        set_pixel(x as i32 + i, (texture.size.y - y) as i32 + j, 255, texture);
+                        set_pixel(x + i, (texture.size.y as i32 - y) + j, 255, texture);
+                    }
+                }
+            }
+            Event::Clear => {
+                for x in 0..texture.size.x as i32 {
+                    for y in 0..texture.size.y as i32 {
+                        set_pixel(x, y, 0, texture);
                     }
                 }
             }
@@ -213,29 +277,6 @@ fn get_pixel(x: i32, y: i32, texture: &Texture) -> u8 {
         return 0;
     }
     texture.data[(x as usize + (y as f32 * texture.size.x) as usize) * 4]
-}
-
-fn action(
-    keyboard_input: Res<Input<KeyCode>>,
-    materials: Res<Assets<ColorMaterial>>,
-    mut textures: ResMut<Assets<Texture>>,
-    drawable: Query<&Handle<ColorMaterial>, (With<Interaction>, With<GlobalTransform>)>,
-    mut display: Query<&mut Text>,
-) {
-    if keyboard_input.pressed(KeyCode::Space) {
-        for mat in drawable.iter() {
-            let material = materials.get(mat).unwrap();
-            let texture = textures
-                .get_mut(material.texture.as_ref().unwrap())
-                .unwrap();
-            for x in 0..texture.size.x as i32 {
-                for y in 0..texture.size.y as i32 {
-                    set_pixel(x, y, 0, texture);
-                }
-            }
-        }
-        display.iter_mut().next().unwrap().value = "".to_string();
-    }
 }
 
 fn infer(
