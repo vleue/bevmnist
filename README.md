@@ -4,16 +4,20 @@ Running MNIST inference in [bevy](https://github.com/bevyengine/bevy) with [trac
 
 ![demo](https://raw.githubusercontent.com/vleue/bevmnist/main/demo.gif)
 
+## Demo
 
-## Optional Setup
+Demo is available: https://vleue.itch.io/bevmnist-poc
+
+## Build and test wasm
+
+### Optional Setup
 To install the required target, WASM utils, and HTTP server:
 ```
 rustup target add wasm32-unknown-unknown
 cargo install wasm-bindgen-cli https
 ```
 
-## Build in wasm
-
+### Build
 ```
 cp -r assets wasm/
 cargo build --release --target wasm32-unknown-unknown --no-default-features
