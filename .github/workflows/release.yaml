@@ -78,14 +78,25 @@ jobs:
           mkdir -p ${{ env.binary }}.app/Contents/MacOS
           cp target/${{ matrix.target.target }}/release/${{ env.binary }} ${{ env.binary }}.app/Contents/MacOS/
           strip ${{ env.binary }}.app/Contents/MacOS/${{ env.binary }}
+          cp -r assets ${{ env.binary }}.app/Contents/MacOS/
       - name: linux finish
         if: matrix.target.channel == 'linux'
         run: |
-          strip target/${{ matrix.target.target }}/release/${{ env.binary }}
+          mkdir linux
+          cp target/${{ matrix.target.target }}/release/${{ env.binary }} linux/
+          strip linux/${{ env.binary }}
+          cp -r assets linux/
+      - name: windows finish
+        if: matrix.target.channel == 'windows'
+        run: |
+          mkdir windows
+          cp target/${{ matrix.target.target }}/release/${{ env.binary }} windows/
+          cp -r assets windows/
       - name: wasm finish
         if: matrix.target.channel == 'wasm'
         run: |
           wasm-bindgen --no-typescript --out-name ${{ env.binary }} --out-dir wasm --target web target/${{ matrix.target.target }}/release/${{ env.binary }}.wasm
+          cp -r assets wasm/
 
       - name: macOS packaging
         if: matrix.target.channel == 'macos'
@@ -95,13 +106,13 @@ jobs:
         if: matrix.target.channel == 'linux'
         uses: papeloto/action-zip@v1
         with:
-          files: target/${{ matrix.target.target }}/release/${{ env.binary }}
+          files: linux
           dest: ${{ env.binary }}.${{ matrix.target.extension }}
       - name: windows packaging
         if: matrix.target.channel == 'windows'
         uses: papeloto/action-zip@v1
         with:
-          files: target/${{ matrix.target.target }}/release/${{ env.binary }}.exe
+          files: windows
           dest: ${{ env.binary }}.${{ matrix.target.extension }}
       - name: wasm packaging
         if: matrix.target.channel == 'wasm'
