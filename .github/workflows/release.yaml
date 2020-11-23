@@ -20,22 +20,18 @@ jobs:
           - channel: linux
             image_name: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            extension: zip
             features: default
           - channel: wasm
             image_name: ubuntu-latest
             target: wasm32-unknown-unknown
-            extension: zip
             features: web
           - channel: macos
             image_name: macOS-latest
             target: x86_64-apple-darwin
-            extension: dmg
             features: default
           - channel: windows
             image_name: windows-latest
             target: x86_64-pc-windows-msvc
-            extension: zip
             features: default
     steps:
       - uses: little-core-labs/get-git-tag@v3.0.1
@@ -46,6 +42,14 @@ jobs:
           toolchain: stable
           target: ${{ matrix.target.target }}
           override: true
+      - name: archive extension setup
+        shell: pwsh
+        run: |
+          switch ( ${{ matrix.target.channel }} )
+          {
+            "macos" { echo "extension=dmg" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append }
+            default { echo "extension=zip" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append }
+          }
 
       - name: macOS setup
         if: matrix.target.channel == 'macos'
@@ -94,32 +98,32 @@ jobs:
       - name: macOS packaging
         if: matrix.target.channel == 'macos'
         run: |
-          hdiutil create -fs HFS+ -volname "${{ env.binary }}" -srcfolder ${{ env.binary }}.app ${{ env.binary }}.${{ matrix.target.extension }}
+          hdiutil create -fs HFS+ -volname "${{ env.binary }}" -srcfolder ${{ env.binary }}.app ${{ env.binary }}.${{ env.extension }}
       - name: linux packaging
         if: matrix.target.channel == 'linux'
         uses: papeloto/action-zip@v1
         with:
           files: linux
-          dest: ${{ env.binary }}.${{ matrix.target.extension }}
+          dest: ${{ env.binary }}.${{ env.extension }}
       - name: windows packaging
         if: matrix.target.channel == 'windows'
         uses: papeloto/action-zip@v1
         with:
           files: windows
-          dest: ${{ env.binary }}.${{ matrix.target.extension }}
+          dest: ${{ env.binary }}.${{ env.extension }}
       - name: wasm packaging
         if: matrix.target.channel == 'wasm'
         uses: papeloto/action-zip@v1
         with:
           files: wasm
-          dest: ${{ env.binary }}.${{ matrix.target.extension }}
+          dest: ${{ env.binary }}.${{ env.extension }}
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ env.binary }}.${{ matrix.target.extension }}
-          asset_name: ${{ env.binary }}-${{ matrix.target.channel }}-${{ steps.get_version.outputs.tag }}.${{ matrix.target.extension }}
+          file: ${{ env.binary }}.${{ env.extension }}
+          asset_name: ${{ env.binary }}-${{ matrix.target.channel }}-${{ steps.get_version.outputs.tag }}.${{ env.extension }}
           tag: ${{ github.ref }}
           overwrite: true
 
@@ -127,7 +131,7 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           name: ${{ matrix.target.channel }}-release
-          path: ${{ env.binary }}.${{ matrix.target.extension }}
+          path: ${{ env.binary }}.${{ env.extension }}
 
   publish-itchio:
     needs: ["release"]
@@ -137,16 +141,20 @@ jobs:
       matrix:
         target:
           - channel: linux
-            extension: zip
           - channel: wasm
-            extension: zip
           - channel: macos
-            extension: dmg
           - channel: windows
-            extension: zip
     steps:
       - uses: little-core-labs/get-git-tag@v3.0.1
         id: get_version
+      - name: archive extension setup
+        shell: pwsh
+        run: |
+          switch ( ${{ matrix.target.channel }} )
+          {
+            "macos" { echo "extension=dmg" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append }
+            default { echo "extension=zip" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append }
+          }
       - name: Download last release
         uses: actions/download-artifact@v1
         with:
@@ -157,5 +165,5 @@ jobs:
           CHANNEL: ${{ matrix.target.channel }}
           ITCH_GAME: ${{ env.itch_game }}
           ITCH_USER: ${{ env.itch_user }}
-          PACKAGE: ${{ matrix.target.channel }}-release/${{ env.binary }}.${{ matrix.target.extension }}
+          PACKAGE: ${{ matrix.target.channel }}-release/${{ env.binary }}.${{ env.extension }}
           VERSION: ${{ steps.get_version.outputs.tag }}
