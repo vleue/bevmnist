@@ -46,7 +46,7 @@ jobs:
       - name: archive extension setup
         shell: pwsh
         run: |
-          switch ( ${{ matrix.target.channel }} )
+          switch ( "${{ matrix.target.channel }}" )
           {
             "macos" { echo "extension=dmg" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append }
             default { echo "extension=zip" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append }
@@ -163,7 +163,7 @@ jobs:
       - name: archive extension setup
         shell: pwsh
         run: |
-          switch ( ${{ matrix.target.channel }} )
+          switch ( "${{ matrix.target.channel }}" )
           {
             "macos" { echo "extension=dmg" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append }
             default { echo "extension=zip" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append }
