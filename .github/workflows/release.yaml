@@ -9,6 +9,7 @@ env:
   binary: bevmnist
   itch_game: bevmnist-poc
   itch_user: vleue
+  package_assets: true
 
 jobs:
   release:
@@ -75,25 +76,37 @@ jobs:
           mkdir -p ${{ env.binary }}.app/Contents/MacOS
           cp target/${{ matrix.target.target }}/release/${{ env.binary }} ${{ env.binary }}.app/Contents/MacOS/
           strip ${{ env.binary }}.app/Contents/MacOS/${{ env.binary }}
-          cp -r assets ${{ env.binary }}.app/Contents/MacOS/
+          if [ "${{ env.package }}" != "false" ]
+          then
+            cp -r assets ${{ env.binary }}.app/Contents/MacOS/
+          fi
       - name: linux finish
         if: matrix.target.channel == 'linux'
         run: |
           mkdir linux
           cp target/${{ matrix.target.target }}/release/${{ env.binary }} linux/
           strip linux/${{ env.binary }}
-          cp -r assets linux/
+          if [ "${{ env.package }}" != "false" ]
+          then
+            cp -r assets linux/
+          fi
       - name: windows finish
         if: matrix.target.channel == 'windows'
         run: |
           mkdir windows
           cp target/${{ matrix.target.target }}/release/${{ env.binary }}.exe windows/
-          cp -r assets windows/
+          if ( -not ${{ env.package }} -eq "false" )
+          {
+            cp -r assets windows/
+          }
       - name: wasm finish
         if: matrix.target.channel == 'wasm'
         run: |
           wasm-bindgen --no-typescript --out-name ${{ env.binary }} --out-dir wasm --target web target/${{ matrix.target.target }}/release/${{ env.binary }}.wasm
-          cp -r assets wasm/
+          if [ "${{ env.package }}" != "false" ]
+          then
+            cp -r assets wasm/
+          fi
 
       - name: macOS packaging
         if: matrix.target.channel == 'macos'
