@@ -76,7 +76,7 @@ jobs:
           mkdir -p ${{ env.binary }}.app/Contents/MacOS
           cp target/${{ matrix.target.target }}/release/${{ env.binary }} ${{ env.binary }}.app/Contents/MacOS/
           strip ${{ env.binary }}.app/Contents/MacOS/${{ env.binary }}
-          if [ "${{ env.package }}" != "false" ]
+          if [ "${{ env.package_assets }}" != "false" ]
           then
             cp -r assets ${{ env.binary }}.app/Contents/MacOS/
           fi
@@ -86,7 +86,7 @@ jobs:
           mkdir linux
           cp target/${{ matrix.target.target }}/release/${{ env.binary }} linux/
           strip linux/${{ env.binary }}
-          if [ "${{ env.package }}" != "false" ]
+          if [ "${{ env.package_assets }}" != "false" ]
           then
             cp -r assets linux/
           fi
@@ -95,7 +95,7 @@ jobs:
         run: |
           mkdir windows
           cp target/${{ matrix.target.target }}/release/${{ env.binary }}.exe windows/
-          if ( -not "${{ env.package }}" -eq "false" )
+          if ( -not "${{ env.package_assets }}" -eq "false" )
           {
             cp -r assets windows/
           }
@@ -103,7 +103,7 @@ jobs:
         if: matrix.target.channel == 'wasm'
         run: |
           wasm-bindgen --no-typescript --out-name ${{ env.binary }} --out-dir wasm --target web target/${{ matrix.target.target }}/release/${{ env.binary }}.wasm
-          if [ "${{ env.package }}" != "false" ]
+          if [ "${{ env.package_assets }}" != "false" ]
           then
             cp -r assets wasm/
           fi
