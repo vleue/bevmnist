@@ -4,7 +4,7 @@
 use bevy::{
     asset::{AssetLoader, LoadContext, LoadedAsset},
     prelude::*,
-    type_registry::TypeUuid,
+    reflect::TypeUuid,
     utils::BoxedFuture,
 };
 use tract_onnx::prelude::*;
@@ -333,14 +333,14 @@ fn update_texture(
 
         match event {
             Event::Draw(pos) => {
-                let radius = (texture.size.x as u32 / INPUT_SIZE / 2) as i32 + 4;
+                let radius = (texture.size.width as u32 / INPUT_SIZE / 2) as i32 + 4;
                 for i in -radius..(radius + 1) {
                     for j in -radius..(radius + 1) {
                         let target_point = Vec2::new(pos.x + i as f32, pos.y + j as f32);
                         if pos.distance(target_point) < radius as f32 {
                             set_pixel(
                                 target_point.x as i32,
-                                (texture.size.y - target_point.y) as i32,
+                                (texture.size.height as f32 - target_point.y) as i32,
                                 255,
                                 texture,
                             )
@@ -350,8 +350,8 @@ fn update_texture(
                 state.prediction_state = PredictionState::Predict;
             }
             Event::Clear => {
-                for x in 0..texture.size.x as i32 {
-                    for y in 0..texture.size.y as i32 {
+                for x in 0..texture.size.width as i32 {
+                    for y in 0..texture.size.height as i32 {
                         set_pixel(x, y, 0, texture);
                     }
                 }
@@ -362,25 +362,25 @@ fn update_texture(
 }
 
 fn set_pixel(x: i32, y: i32, color: u8, texture: &mut Texture) {
-    if x as f32 > texture.size.x - 1. || x < 0 {
+    if x > texture.size.width as i32 - 1 || x < 0 {
         return;
     }
-    if y as f32 > texture.size.y - 1. || y < 0 {
+    if y > texture.size.height as i32 - 1 || y < 0 {
         return;
     }
-    texture.data[(x as usize + (y as f32 * texture.size.x) as usize) * 4] = color;
-    texture.data[(x as usize + (y as f32 * texture.size.x) as usize) * 4 + 1] = color;
-    texture.data[(x as usize + (y as f32 * texture.size.x) as usize) * 4 + 2] = color;
+    texture.data[(x as usize + (y as u32 * texture.size.width) as usize) * 4] = color;
+    texture.data[(x as usize + (y as u32 * texture.size.width) as usize) * 4 + 1] = color;
+    texture.data[(x as usize + (y as u32 * texture.size.width) as usize) * 4 + 2] = color;
 }
 
 fn get_pixel(x: i32, y: i32, texture: &Texture) -> u8 {
-    if x as f32 > texture.size.x - 1. || x < 0 {
+    if x > texture.size.width as i32 - 1 || x < 0 {
         return 0;
     }
-    if y as f32 > texture.size.y - 1. || y < 0 {
+    if y > texture.size.height as i32 - 1 || y < 0 {
         return 0;
     }
-    texture.data[(x as usize + (y as f32 * texture.size.x) as usize) * 4]
+    texture.data[(x as usize + (y as u32 * texture.size.width) as usize) * 4]
 }
 
 fn infer(
@@ -396,7 +396,7 @@ fn infer(
             let material = materials.get(mat).unwrap();
             let texture = textures.get(material.texture.as_ref().unwrap()).unwrap();
 
-            let pixel_size = (texture.size.x as u32 / INPUT_SIZE) as i32;
+            let pixel_size = (texture.size.width as u32 / INPUT_SIZE) as i32;
 
             let image = tract_ndarray::Array4::from_shape_fn(
                 (1, 1, INPUT_SIZE as usize, INPUT_SIZE as usize),
