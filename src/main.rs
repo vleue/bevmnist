@@ -50,6 +50,23 @@ enum Event {
     Clear,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+mod sizes {
+    pub const WINDOW_WIDTH: u32 = 1280;
+    pub const WINDOW_HEIGHT: u32 = 720;
+    pub const DRAWING_ZONE_STYLE: f32 = 600.0;
+    pub const CLEAR_BUTTON_HEIGHT: f32 = 60.0;
+}
+#[cfg(target_arch = "wasm32")]
+mod sizes {
+    pub const WINDOW_WIDTH: u32 = 640;
+    pub const WINDOW_HEIGHT: u32 = 360;
+    pub const DRAWING_ZONE_STYLE: f32 = 300.0;
+    pub const CLEAR_BUTTON_HEIGHT: f32 = 30.0;
+}
+
+use sizes::*;
+
 fn main() {
     let mut builder = App::build();
     builder
@@ -57,6 +74,8 @@ fn main() {
             title: "bevmnist".to_string(),
             #[cfg(target_arch = "wasm32")]
             canvas: Some("#bevy-canvas".to_string()),
+            width: WINDOW_WIDTH,
+            height: WINDOW_HEIGHT,
             ..Default::default()
         })
         .add_plugins(DefaultPlugins);
@@ -117,7 +136,6 @@ fn setup(
     let color_none = materials.add(Color::NONE.into());
 
     let drawing_texture = asset_server.load("base-image.png");
-    let drawing_zone_style = 600.;
 
     commands
         .spawn(NodeBundle {
@@ -149,8 +167,8 @@ fn setup(
                         .spawn(ImageBundle {
                             style: Style {
                                 size: Size::new(
-                                    Val::Px(drawing_zone_style),
-                                    Val::Px(drawing_zone_style),
+                                    Val::Px(DRAWING_ZONE_STYLE),
+                                    Val::Px(DRAWING_ZONE_STYLE),
                                 ),
                                 ..Default::default()
                             },
@@ -166,8 +184,8 @@ fn setup(
                                 justify_content: JustifyContent::Center,
                                 align_items: AlignItems::Center,
                                 size: Size::new(
-                                    Val::Px(drawing_zone_style),
-                                    Val::Px(drawing_zone_style),
+                                    Val::Px(DRAWING_ZONE_STYLE),
+                                    Val::Px(DRAWING_ZONE_STYLE),
                                 ),
                                 ..Default::default()
                             },
@@ -181,7 +199,7 @@ fn setup(
                                         value: "".to_string(),
                                         font: asset_server.load("FiraMono-Medium.ttf"),
                                         style: TextStyle {
-                                            font_size: drawing_zone_style,
+                                            font_size: DRAWING_ZONE_STYLE,
                                             color: Color::WHITE,
                                             ..Default::default()
                                         },
@@ -194,11 +212,11 @@ fn setup(
             parent
                 .spawn(ButtonBundle {
                     style: Style {
-                        size: Size::new(Val::Px(150.0), Val::Px(65.0)),
+                        size: Size::new(Val::Px(150.0), Val::Px(CLEAR_BUTTON_HEIGHT)),
                         // center button
                         margin: Rect {
                             left: Val::Auto,
-                            top: Val::Px(20.),
+                            top: Val::Px(CLEAR_BUTTON_HEIGHT / 3.),
                             right: Val::Auto,
                             bottom: Val::Auto,
                         },
@@ -217,7 +235,7 @@ fn setup(
                             value: "Clear".to_string(),
                             font: asset_server.load("FiraMono-Medium.ttf"),
                             style: TextStyle {
-                                font_size: 40.0,
+                                font_size: CLEAR_BUTTON_HEIGHT * 2. / 3.,
                                 color: Color::rgb(0.9, 0.9, 0.9),
                                 ..Default::default()
                             },
@@ -322,10 +340,10 @@ fn update_texture(
     materials: Res<Assets<ColorMaterial>>,
     mut textures: ResMut<Assets<Texture>>,
     mut state: ResMut<State>,
-    drawable: Query<&Handle<ColorMaterial>, With<Drawable>>,
+    drawable: Query<(&bevy::ui::Node, &Handle<ColorMaterial>), With<Drawable>>,
 ) {
     for event in reader.iter(&events) {
-        let mat = drawable.iter().next().unwrap();
+        let (node, mat) = drawable.iter().next().unwrap();
         let material = materials.get(mat).unwrap();
         let texture = textures
             .get_mut(material.texture.as_ref().unwrap())
@@ -333,17 +351,22 @@ fn update_texture(
 
         match event {
             Event::Draw(pos) => {
-                let radius = (texture.size.width as u32 / INPUT_SIZE / 2) as i32 + 4;
+                let radius = (1.3 * node.size.x / INPUT_SIZE as f32 / 2.) as i32;
+                let scale = (texture.size.width as f32 / node.size.x) as i32;
                 for i in -radius..(radius + 1) {
                     for j in -radius..(radius + 1) {
                         let target_point = Vec2::new(pos.x + i as f32, pos.y + j as f32);
                         if pos.distance(target_point) < radius as f32 {
-                            set_pixel(
-                                target_point.x as i32,
-                                (texture.size.height as f32 - target_point.y) as i32,
-                                255,
-                                texture,
-                            )
+                            for i in 0..=scale {
+                                for j in 0..=scale {
+                                    set_pixel(
+                                        (target_point.x as i32) * scale + i,
+                                        ((node.size.y as f32 - target_point.y) as i32) * scale + j,
+                                        255,
+                                        texture,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
