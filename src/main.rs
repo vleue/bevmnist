@@ -52,15 +52,15 @@ enum Event {
 
 #[cfg(not(target_arch = "wasm32"))]
 mod sizes {
-    pub const WINDOW_WIDTH: u32 = 1280;
-    pub const WINDOW_HEIGHT: u32 = 720;
+    pub const WINDOW_WIDTH: f32 = 1280.;
+    pub const WINDOW_HEIGHT: f32 = 720.;
     pub const DRAWING_ZONE_STYLE: f32 = 600.0;
     pub const CLEAR_BUTTON_HEIGHT: f32 = 60.0;
 }
 #[cfg(target_arch = "wasm32")]
 mod sizes {
-    pub const WINDOW_WIDTH: u32 = 640;
-    pub const WINDOW_HEIGHT: u32 = 360;
+    pub const WINDOW_WIDTH: f32 = 640.;
+    pub const WINDOW_HEIGHT: f32 = 360.;
     pub const DRAWING_ZONE_STYLE: f32 = 300.0;
     pub const CLEAR_BUTTON_HEIGHT: f32 = 30.0;
 }
@@ -89,13 +89,13 @@ fn main() {
         .init_resource::<State>()
         .init_resource::<ButtonMaterials>()
         .add_event::<Event>()
-        .add_startup_system(setup)
-        .add_system(drawing_mouse)
-        .add_system(drawing_touch)
-        .add_system(clear_action)
-        .add_system(update_texture)
-        .add_system(infer)
-        .add_system(button_system)
+        .add_startup_system(setup.system())
+        .add_system(drawing_mouse.system())
+        .add_system(drawing_touch.system())
+        .add_system(clear_action.system())
+        .add_system(update_texture.system())
+        .add_system(infer.system())
+        .add_system(button_system.system())
         .run();
 }
 
@@ -113,7 +113,6 @@ struct State {
 
 impl FromResources for State {
     fn from_resources(resources: &Resources) -> Self {
-        // let mut onnx_models = resources.get_mut::<Assets<OnnxModel>>().unwrap();
         let asset_server = resources.get::<AssetServer>().unwrap();
         State {
             prediction_state: PredictionState::Wait,
@@ -131,7 +130,7 @@ fn setup(
     button_materials: Res<ButtonMaterials>,
     asset_server: Res<AssetServer>,
 ) {
-    commands.spawn(UiCameraBundle::default());
+    commands.spawn(CameraUiBundle::default());
 
     let color_none = materials.add(Color::NONE.into());
 
@@ -337,14 +336,14 @@ fn clear_action(
 
 fn update_texture(
     (mut reader, events): (Local<EventReader<Event>>, Res<Events<Event>>),
-    materials: Res<Assets<ColorMaterial>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
     mut textures: ResMut<Assets<Texture>>,
     mut state: ResMut<State>,
-    drawable: Query<(&bevy::ui::Node, &Handle<ColorMaterial>), With<Drawable>>,
+    mut drawable: Query<(&bevy::ui::Node, &mut Handle<ColorMaterial>), With<Drawable>>,
 ) {
     for event in reader.iter(&events) {
-        let (node, mat) = drawable.iter().next().unwrap();
-        let material = materials.get(mat).unwrap();
+        let (node, mat) = drawable.iter_mut().next().unwrap();
+        let material = materials.get_mut(mat.clone()).unwrap();
         let texture = textures
             .get_mut(material.texture.as_ref().unwrap())
             .unwrap();

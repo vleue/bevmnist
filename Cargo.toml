@@ -13,12 +13,10 @@ anyhow = "1.0"
 
 tract-onnx = "0.11.2"
 
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy", default-features = false, features = ["bevy_winit", "render"] }
+bevy = { version = "0.4", default-features = false, features = ["bevy_winit", "render"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy", default-features = false, features = ["bevy_winit", "render"] }
-bevy_webgl2 = { git = "https://github.com/vleue/bevy_webgl2", branch = "logical" }
+bevy_webgl2 = "0.4"
 
 [features]
 default = ["bevy/bevy_wgpu"]
@@ -32,6 +30,3 @@ lto = true
 opt-level = 3
 incremental = false
 codegen-units = 1
-
-[patch.'https://github.com/bevyengine/bevy']
-bevy = { git = "https://github.com//bevyengine/bevy" }
