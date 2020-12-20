@@ -1,6 +1,6 @@
 [package]
 name = "bevmnist"
-version = "0.1.8"
+version = "0.1.9-dev"
 authors = ["François Mockers <mockersf@gmail.com>"]
 edition = "2018"
 license = "MIT"
