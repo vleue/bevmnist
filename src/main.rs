@@ -434,9 +434,9 @@ fn infer(
                         }
                     }
                     if val > pixel_size * pixel_size / 2 {
-                        1. as f32
+                        1.0_f32
                     } else {
-                        0. as f32
+                        0.0_f32
                     }
                 },
             )
