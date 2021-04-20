@@ -16,7 +16,7 @@ tract-onnx = "0.13"
 bevy = { version = "0.4", default-features = false, features = ["bevy_winit", "render"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-bevy_webgl2 = "0.4"
+bevy_webgl2 = "0.5"
 
 [features]
 default = ["bevy/bevy_wgpu"]
