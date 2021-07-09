@@ -11,7 +11,7 @@ publish = false
 [dependencies]
 anyhow = "1.0"
 
-tract-onnx = "0.13"
+tract-onnx = "0.15"
 
 bevy = { version = "0.4", default-features = false, features = ["bevy_winit", "render"] }
 
