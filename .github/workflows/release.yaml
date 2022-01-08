@@ -114,19 +114,19 @@ jobs:
           hdiutil create -fs HFS+ -volname "${{ env.binary }}" -srcfolder ${{ env.binary }}.app ${{ env.binary }}.${{ env.extension }}
       - name: linux packaging
         if: matrix.target.channel == 'linux'
-        uses: papeloto/action-zip@v1
+        uses: vimtor/action-zip@v1
         with:
           files: linux
           dest: ${{ env.binary }}.${{ env.extension }}
       - name: windows packaging
         if: matrix.target.channel == 'windows'
-        uses: papeloto/action-zip@v1
+        uses: vimtor/action-zip@v1
         with:
           files: windows
           dest: ${{ env.binary }}.${{ env.extension }}
       - name: wasm packaging
         if: matrix.target.channel == 'wasm'
-        uses: papeloto/action-zip@v1
+        uses: vimtor/action-zip@v1
         with:
           files: wasm
           dest: ${{ env.binary }}.${{ env.extension }}
