@@ -68,9 +68,9 @@ mod sizes {
 use sizes::*;
 
 fn main() {
-    let mut builder = App::build();
+    let mut builder = App::new();
     builder
-        .add_resource(WindowDescriptor {
+        .insert_resource(WindowDescriptor {
             title: "bevmnist".to_string(),
             #[cfg(target_arch = "wasm32")]
             canvas: Some("#bevy-canvas".to_string()),
@@ -80,22 +80,18 @@ fn main() {
         })
         .add_plugins(DefaultPlugins);
 
-    #[cfg(target_arch = "wasm32")]
-    builder.add_plugin(bevy_webgl2::WebGL2Plugin::default());
-
     builder
         .add_asset::<OnnxModel>()
         .init_asset_loader::<OnnxModelLoader>()
         .init_resource::<State>()
-        .init_resource::<ButtonMaterials>()
         .add_event::<Event>()
-        .add_startup_system(setup.system())
-        .add_system(drawing_mouse.system())
-        .add_system(drawing_touch.system())
-        .add_system(clear_action.system())
-        .add_system(update_texture.system())
-        .add_system(infer.system())
-        .add_system(button_system.system())
+        .add_startup_system(setup)
+        .add_system(drawing_mouse)
+        .add_system(drawing_touch)
+        .add_system(clear_action)
+        .add_system(update_texture)
+        .add_system(infer)
+        .add_system(button_system)
         .run();
 }
 
@@ -111,9 +107,9 @@ struct State {
     prediction_state: PredictionState,
 }
 
-impl FromResources for State {
-    fn from_resources(resources: &Resources) -> Self {
-        let asset_server = resources.get::<AssetServer>().unwrap();
+impl FromWorld for State {
+    fn from_world(world: &mut World) -> Self {
+        let asset_server = world.get_resource::<AssetServer>().unwrap();
         State {
             prediction_state: PredictionState::Wait,
             model: asset_server.load("model.onnx"),
@@ -121,23 +117,18 @@ impl FromResources for State {
     }
 }
 
+#[derive(Component)]
 struct Drawable;
+#[derive(Component)]
 struct Prediction;
 
-fn setup(
-    commands: &mut Commands,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    button_materials: Res<ButtonMaterials>,
-    asset_server: Res<AssetServer>,
-) {
-    commands.spawn(CameraUiBundle::default());
-
-    let color_none = materials.add(Color::NONE.into());
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.spawn_bundle(UiCameraBundle::default());
 
     let drawing_texture = asset_server.load("base-image.png");
 
     commands
-        .spawn(NodeBundle {
+        .spawn_bundle(NodeBundle {
             style: Style {
                 margin: Rect::all(Val::Auto),
                 justify_content: JustifyContent::Center,
@@ -145,25 +136,25 @@ fn setup(
                 flex_direction: FlexDirection::ColumnReverse,
                 ..Default::default()
             },
-            material: color_none.clone(),
+            color: UiColor(Color::NONE),
             ..Default::default()
         })
-        .with(bevy::ui::FocusPolicy::Pass)
+        .insert(bevy::ui::FocusPolicy::Pass)
         .with_children(|parent| {
             parent
-                .spawn(NodeBundle {
+                .spawn_bundle(NodeBundle {
                     style: Style {
                         margin: Rect::all(Val::Auto),
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
                         ..Default::default()
                     },
-                    material: color_none.clone(),
+                    color: UiColor(Color::NONE),
                     ..Default::default()
                 })
                 .with_children(|predict| {
                     predict
-                        .spawn(ImageBundle {
+                        .spawn_bundle(ImageBundle {
                             style: Style {
                                 size: Size::new(
                                     Val::Px(DRAWING_ZONE_STYLE),
@@ -171,13 +162,13 @@ fn setup(
                                 ),
                                 ..Default::default()
                             },
-                            material: materials.add(drawing_texture.into()),
+                            image: UiImage(drawing_texture),
                             ..Default::default()
                         })
-                        .with(Drawable)
-                        .with_bundle((Interaction::None, bevy::ui::FocusPolicy::Block));
+                        .insert(Drawable)
+                        .insert_bundle((Interaction::None, bevy::ui::FocusPolicy::Block));
                     predict
-                        .spawn(NodeBundle {
+                        .spawn_bundle(NodeBundle {
                             style: Style {
                                 margin: Rect::all(Val::Auto),
                                 justify_content: JustifyContent::Center,
@@ -188,28 +179,30 @@ fn setup(
                                 ),
                                 ..Default::default()
                             },
-                            material: color_none.clone(),
+                            color: UiColor(Color::NONE),
                             ..Default::default()
                         })
                         .with_children(|text_parent| {
                             text_parent
-                                .spawn(TextBundle {
-                                    text: Text {
-                                        value: "".to_string(),
-                                        font: asset_server.load("FiraMono-Medium.ttf"),
-                                        style: TextStyle {
-                                            font_size: DRAWING_ZONE_STYLE,
+                                .spawn_bundle(TextBundle {
+                                    text: Text::with_section(
+                                        "",
+                                        TextStyle {
+                                            font: asset_server.load("FiraMono-Medium.ttf"),
+                                            font_size: DRAWING_ZONE_STYLE / 2.0,
                                             color: Color::WHITE,
+                                        },
+                                        TextAlignment {
                                             ..Default::default()
                                         },
-                                    },
+                                    ),
                                     ..Default::default()
                                 })
-                                .with(Prediction);
+                                .insert(Prediction);
                         });
                 });
             parent
-                .spawn(ButtonBundle {
+                .spawn_bundle(ButtonBundle {
                     style: Style {
                         size: Size::new(Val::Px(150.0), Val::Px(CLEAR_BUTTON_HEIGHT)),
                         // center button
@@ -225,20 +218,22 @@ fn setup(
                         align_items: AlignItems::Center,
                         ..Default::default()
                     },
-                    material: button_materials.normal.clone(),
+                    color: UiColor(Color::rgb(0.15, 0.15, 0.15)),
                     ..Default::default()
                 })
                 .with_children(|parent| {
-                    parent.spawn(TextBundle {
-                        text: Text {
-                            value: "Clear".to_string(),
-                            font: asset_server.load("FiraMono-Medium.ttf"),
-                            style: TextStyle {
+                    parent.spawn_bundle(TextBundle {
+                        text: Text::with_section(
+                            "Clear",
+                            TextStyle {
+                                font: asset_server.load("FiraMono-Medium.ttf"),
                                 font_size: CLEAR_BUTTON_HEIGHT * 2. / 3.,
                                 color: Color::rgb(0.9, 0.9, 0.9),
+                            },
+                            TextAlignment {
                                 ..Default::default()
                             },
-                        },
+                        ),
                         ..Default::default()
                     });
                 });
@@ -246,9 +241,9 @@ fn setup(
 }
 
 fn drawing_mouse(
-    (mut reader, events): (Local<EventReader<CursorMoved>>, Res<Events<CursorMoved>>),
+    mut reader: EventReader<CursorMoved>,
     mut last_mouse_position: Local<Option<Vec2>>,
-    mut texture_events: ResMut<Events<Event>>,
+    mut texture_events: EventWriter<Event>,
     state: Res<State>,
     drawable: Query<(&Interaction, &GlobalTransform, &Style), With<Drawable>>,
 ) {
@@ -269,7 +264,7 @@ fn drawing_mouse(
             } else {
                 0.
             };
-            for event in reader.iter(&events) {
+            for event in reader.iter() {
                 if let Some(last_mouse_position) = *last_mouse_position {
                     let steps =
                         (last_mouse_position.distance(event.position) as u32 / INPUT_SIZE + 1) * 3;
@@ -296,8 +291,8 @@ fn drawing_mouse(
 }
 
 fn drawing_touch(
-    (mut reader, events): (Local<EventReader<TouchInput>>, Res<Events<TouchInput>>),
-    mut texture_events: ResMut<Events<Event>>,
+    mut reader: EventReader<TouchInput>,
+    mut texture_events: EventWriter<Event>,
     state: Res<State>,
     drawable: Query<(&GlobalTransform, &Style), With<Drawable>>,
 ) {
@@ -312,7 +307,7 @@ fn drawing_touch(
         } else {
             0.
         };
-        for event in reader.iter(&events) {
+        for event in reader.iter() {
             if let PredictionState::Wait = state.prediction_state {
                 texture_events.send(Event::Clear);
             }
@@ -325,33 +320,31 @@ fn drawing_touch(
 
 fn clear_action(
     keyboard_input: Res<Input<KeyCode>>,
-    mut texture_events: ResMut<Events<Event>>,
+    mut texture_events: EventWriter<Event>,
     mut display: Query<&mut Text, With<Prediction>>,
 ) {
     if keyboard_input.pressed(KeyCode::Space) {
         texture_events.send(Event::Clear);
-        display.iter_mut().next().unwrap().value = "".to_string();
+        display.iter_mut().next().unwrap().sections[0].value = "".to_string();
     }
 }
 
 fn update_texture(
-    (mut reader, events): (Local<EventReader<Event>>, Res<Events<Event>>),
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    mut textures: ResMut<Assets<Texture>>,
+    mut reader: EventReader<Event>,
+    mut textures: ResMut<Assets<Image>>,
     mut state: ResMut<State>,
-    mut drawable: Query<(&bevy::ui::Node, &mut Handle<ColorMaterial>), With<Drawable>>,
+    mut drawable: Query<(&bevy::ui::Node, &UiImage), With<Drawable>>,
 ) {
-    for event in reader.iter(&events) {
-        let (node, mat) = drawable.iter_mut().next().unwrap();
-        let material = materials.get_mut(mat.clone()).unwrap();
-        let texture = textures
-            .get_mut(material.texture.as_ref().unwrap())
-            .unwrap();
-
+    let (node, image) = drawable.iter_mut().next().unwrap();
+    let texture = match textures.get_mut(&image.0) {
+        Some(image) => image,
+        None => return,
+    };
+    for event in reader.iter() {
         match event {
             Event::Draw(pos) => {
                 let radius = (1.3 * node.size.x / INPUT_SIZE as f32 / 2.) as i32;
-                let scale = (texture.size.width as f32 / node.size.x) as i32;
+                let scale = (texture.texture_descriptor.size.width as f32 / node.size.x) as i32;
                 for i in -radius..(radius + 1) {
                     for j in -radius..(radius + 1) {
                         let target_point = Vec2::new(pos.x + i as f32, pos.y + j as f32);
@@ -372,8 +365,8 @@ fn update_texture(
                 state.prediction_state = PredictionState::Predict;
             }
             Event::Clear => {
-                for x in 0..texture.size.width as i32 {
-                    for y in 0..texture.size.height as i32 {
+                for x in 0..texture.texture_descriptor.size.width as i32 {
+                    for y in 0..texture.texture_descriptor.size.height as i32 {
                         set_pixel(x, y, 0, texture);
                     }
                 }
@@ -383,42 +376,45 @@ fn update_texture(
     }
 }
 
-fn set_pixel(x: i32, y: i32, color: u8, texture: &mut Texture) {
-    if x > texture.size.width as i32 - 1 || x < 0 {
+fn set_pixel(x: i32, y: i32, color: u8, texture: &mut Image) {
+    if x > texture.texture_descriptor.size.width as i32 - 1 || x < 0 {
         return;
     }
-    if y > texture.size.height as i32 - 1 || y < 0 {
+    if y > texture.texture_descriptor.size.height as i32 - 1 || y < 0 {
         return;
     }
-    texture.data[(x as usize + (y as u32 * texture.size.width) as usize) * 4] = color;
-    texture.data[(x as usize + (y as u32 * texture.size.width) as usize) * 4 + 1] = color;
-    texture.data[(x as usize + (y as u32 * texture.size.width) as usize) * 4 + 2] = color;
+    texture.data[(x as usize + (y as u32 * texture.texture_descriptor.size.width) as usize) * 4] =
+        color;
+    texture.data
+        [(x as usize + (y as u32 * texture.texture_descriptor.size.width) as usize) * 4 + 1] =
+        color;
+    texture.data
+        [(x as usize + (y as u32 * texture.texture_descriptor.size.width) as usize) * 4 + 2] =
+        color;
 }
 
-fn get_pixel(x: i32, y: i32, texture: &Texture) -> u8 {
-    if x > texture.size.width as i32 - 1 || x < 0 {
+fn get_pixel(x: i32, y: i32, texture: &Image) -> u8 {
+    if x > texture.texture_descriptor.size.width as i32 - 1 || x < 0 {
         return 0;
     }
-    if y > texture.size.height as i32 - 1 || y < 0 {
+    if y > texture.texture_descriptor.size.height as i32 - 1 || y < 0 {
         return 0;
     }
-    texture.data[(x as usize + (y as u32 * texture.size.width) as usize) * 4]
+    texture.data[(x as usize + (y as u32 * texture.texture_descriptor.size.width) as usize) * 4]
 }
 
 fn infer(
     state: Res<State>,
-    materials: Res<Assets<ColorMaterial>>,
-    textures: Res<Assets<Texture>>,
+    textures: Res<Assets<Image>>,
     models: Res<Assets<OnnxModel>>,
-    drawable: Query<&Handle<ColorMaterial>, With<Drawable>>,
+    drawable: Query<&UiImage, With<Drawable>>,
     mut display: Query<&mut Text>,
 ) {
     if let PredictionState::Predict = state.prediction_state {
-        for mat in drawable.iter() {
-            let material = materials.get(mat).unwrap();
-            let texture = textures.get(material.texture.as_ref().unwrap()).unwrap();
+        for ui_image in drawable.iter() {
+            let texture = textures.get(&ui_image.0).unwrap();
 
-            let pixel_size = (texture.size.width as u32 / INPUT_SIZE) as i32;
+            let pixel_size = (texture.texture_descriptor.size.width as u32 / INPUT_SIZE) as i32;
 
             let image = tract_ndarray::Array4::from_shape_fn(
                 (1, 1, INPUT_SIZE as usize, INPUT_SIZE as usize),
@@ -454,9 +450,10 @@ fn infer(
                     .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
                 {
                     if score > 10. {
-                        display.iter_mut().next().unwrap().value = format!("{:?}", value);
+                        display.iter_mut().next().unwrap().sections[0].value =
+                            format!("{:?}", value);
                     } else {
-                        display.iter_mut().next().unwrap().value = "".to_string();
+                        display.iter_mut().next().unwrap().sections[0].value = "".to_string();
                     }
                 }
             }
@@ -464,44 +461,26 @@ fn infer(
     }
 }
 
-struct ButtonMaterials {
-    normal: Handle<ColorMaterial>,
-    hovered: Handle<ColorMaterial>,
-    pressed: Handle<ColorMaterial>,
-}
-
-impl FromResources for ButtonMaterials {
-    fn from_resources(resources: &Resources) -> Self {
-        let mut materials = resources.get_mut::<Assets<ColorMaterial>>().unwrap();
-        ButtonMaterials {
-            normal: materials.add(Color::rgb(0.15, 0.15, 0.15).into()),
-            hovered: materials.add(Color::rgb(0.25, 0.25, 0.25).into()),
-            pressed: materials.add(Color::rgb(0.35, 0.75, 0.35).into()),
-        }
-    }
-}
-
 fn button_system(
-    button_materials: Res<ButtonMaterials>,
-    mut texture_events: ResMut<Events<Event>>,
+    mut texture_events: EventWriter<Event>,
     mut interaction_query: Query<
-        (&Interaction, &mut Handle<ColorMaterial>),
-        (Mutated<Interaction>, With<Button>),
+        (&Interaction, &mut UiColor),
+        (Changed<Interaction>, With<Button>),
     >,
     mut display: Query<&mut Text, With<Prediction>>,
 ) {
-    for (interaction, mut material) in interaction_query.iter_mut() {
+    for (interaction, mut color) in interaction_query.iter_mut() {
         match *interaction {
             Interaction::Clicked => {
-                *material = button_materials.pressed.clone();
+                color.0 = Color::rgb(0.35, 0.75, 0.35);
                 texture_events.send(Event::Clear);
-                display.iter_mut().next().unwrap().value = "".to_string();
+                display.iter_mut().next().unwrap().sections[0].value = "".to_string();
             }
             Interaction::Hovered => {
-                *material = button_materials.hovered.clone();
+                color.0 = Color::rgb(0.25, 0.25, 0.25);
             }
             Interaction::None => {
-                *material = button_materials.normal.clone();
+                color.0 = Color::rgb(0.15, 0.15, 0.15);
             }
         }
     }
