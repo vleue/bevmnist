@@ -13,15 +13,15 @@ tract-onnx = "0.15"
 
 bevy = { version = "0.6", default-features = false, features = ["bevy_winit", "render", "png"]  }
 
+[target.'cfg(target_os = "linux")'.dependencies]
+bevy = { version = "0.6", default-features = false, features = [
+  "x11",
+] }
+
+
 [features]
 default = []
 web = []
 
 [profile.dev.package."*"]
 opt-level = 3
-
-# [profile.release]
-# lto = true
-# opt-level = 3
-# incremental = false
-# codegen-units = 1
