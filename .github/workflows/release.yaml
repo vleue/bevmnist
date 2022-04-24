@@ -60,7 +60,7 @@ jobs:
       - name: linux setup
         if: matrix.target.channel == 'linux'
         run: |
-          sudo apt-get update; sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
+          sudo apt-get update; sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev
       - name: wasm setup
         if: matrix.target.channel == 'wasm'
         run: |
@@ -114,19 +114,19 @@ jobs:
           hdiutil create -fs HFS+ -volname "${{ env.binary }}" -srcfolder ${{ env.binary }}.app ${{ env.binary }}.${{ env.extension }}
       - name: linux packaging
         if: matrix.target.channel == 'linux'
-        uses: vimtor/action-zip@v1
+        uses: papeloto/action-zip@v1
         with:
           files: linux
           dest: ${{ env.binary }}.${{ env.extension }}
       - name: windows packaging
         if: matrix.target.channel == 'windows'
-        uses: vimtor/action-zip@v1
+        uses: papeloto/action-zip@v1
         with:
           files: windows
           dest: ${{ env.binary }}.${{ env.extension }}
       - name: wasm packaging
         if: matrix.target.channel == 'wasm'
-        uses: vimtor/action-zip@v1
+        uses: papeloto/action-zip@v1
         with:
           files: wasm
           dest: ${{ env.binary }}.${{ env.extension }}
@@ -172,7 +172,7 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: ${{ matrix.target.channel }}-release
-      - uses: josephbmanley/butler-publish-itchio-action@v1.0.2
+      - uses: josephbmanley/butler-publish-itchio-action@v1.0.3
         env:
           BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
           CHANNEL: ${{ matrix.target.channel }}
