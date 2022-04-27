@@ -2788,9 +2788,9 @@ dependencies = [
 
 [[package]]
 name = "tract-core"
-version = "0.16.4"
+version = "0.16.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74f2d8ee91a9ad22f260e41fd434acb1361055d562486ae270c271991b3879f8"
+checksum = "1434eac07f590ab0e05fd44f57f3b3abbfcc078f8821dc8c1f316bd3443b34b8"
 dependencies = [
  "anyhow",
  "bit-set",
@@ -2811,9 +2811,9 @@ dependencies = [
 
 [[package]]
 name = "tract-data"
-version = "0.16.4"
+version = "0.16.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f3d76e0765c8f971ab71a91b04ab71510828e782850efeb550f6ca45ccb0cfc"
+checksum = "e4a45308da2b961006a0a90d914f7c7b3f9c50f513de2a59c2475006d98177a8"
 dependencies = [
  "anyhow",
  "educe",
@@ -2830,9 +2830,9 @@ dependencies = [
 
 [[package]]
 name = "tract-hir"
-version = "0.16.4"
+version = "0.16.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2fecd4dcef42cb54f1226ad00f4db2919a4362a08e982df8bfb0e51fd4c067f"
+checksum = "d5dc41bb5f0c15c1eb7ee46a43ac12579432e429bda2281a3ef18bd665fbacde"
 dependencies = [
  "derive-new",
  "educe",
@@ -2842,9 +2842,9 @@ dependencies = [
 
 [[package]]
 name = "tract-linalg"
-version = "0.16.4"
+version = "0.16.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0203e1a40d1027fba6047310ee5678345b4e301379c641dd5e65136a16e9b21f"
+checksum = "753f989e45fca517bcd39b17827c99f5636e22927dae99f3df4c5dc82ec839d2"
 dependencies = [
  "cc",
  "derive-new",
@@ -2866,9 +2866,9 @@ dependencies = [
 
 [[package]]
 name = "tract-nnef"
-version = "0.16.4"
+version = "0.16.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c01c6d3c5a5e64d3964f18631d804d1cc17ba15171772da4761b2dfb6c92acfd"
+checksum = "e122e1856d571a02ce3603e7ab54952af99aa716975c63a26f8a3d9e6c659e2a"
 dependencies = [
  "byteorder",
  "flate2",
@@ -2881,9 +2881,9 @@ dependencies = [
 
 [[package]]
 name = "tract-onnx"
-version = "0.16.4"
+version = "0.16.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "904c41c877a0ddd3c05a9bae864069dda1e61d75618e6e7a8e1887bf55bb6adf"
+checksum = "cf88f31ba716f3247c4d2eb6ff47ac66ff9f48523ba4d2538dc9ceca0b2c6372"
 dependencies = [
  "bytes",
  "derive-new",
@@ -2901,9 +2901,9 @@ dependencies = [
 
 [[package]]
 name = "tract-onnx-opl"
-version = "0.16.4"
+version = "0.16.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68324435532fe72b8455de8c9f2c237fd34d5e0e9f0456b12a8a41075ca11f22"
+checksum = "a1be1e8e7cec6ebbc475fdc2e163c2b8271cd40dc9007d0c8602cefc5194843e"
 dependencies = [
  "educe",
  "tract-nnef",
