@@ -9,12 +9,12 @@ publish = false
 [dependencies]
 anyhow = "1.0"
 
-tract-onnx = "0.16"
+tract-onnx = "0.17"
 
-bevy = { version = "0.7", default-features = false, features = ["bevy_winit", "render", "png"]  }
+bevy = { version = "0.8", default-features = false, features = ["bevy_winit", "render", "png", "bevy_asset"]  }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-bevy = { version = "0.7", default-features = false, features = [
+bevy = { version = "0.8", default-features = false, features = [
   "x11",
 ] }
 

@@ -123,14 +123,14 @@ struct Drawable;
 struct Prediction;
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn_bundle(UiCameraBundle::default());
+    commands.spawn_bundle(Camera2dBundle::default());
 
     let drawing_texture = asset_server.load("base-image.png");
 
     commands
         .spawn_bundle(NodeBundle {
             style: Style {
-                margin: Rect::all(Val::Auto),
+                margin: UiRect::all(Val::Auto),
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
                 flex_direction: FlexDirection::ColumnReverse,
@@ -144,7 +144,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             parent
                 .spawn_bundle(NodeBundle {
                     style: Style {
-                        margin: Rect::all(Val::Auto),
+                        margin: UiRect::all(Val::Auto),
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
                         ..Default::default()
@@ -170,7 +170,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     predict
                         .spawn_bundle(NodeBundle {
                             style: Style {
-                                margin: Rect::all(Val::Auto),
+                                margin: UiRect::all(Val::Auto),
                                 justify_content: JustifyContent::Center,
                                 align_items: AlignItems::Center,
                                 size: Size::new(
@@ -185,15 +185,12 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         .with_children(|text_parent| {
                             text_parent
                                 .spawn_bundle(TextBundle {
-                                    text: Text::with_section(
+                                    text: Text::from_section(
                                         "",
                                         TextStyle {
                                             font: asset_server.load("FiraMono-Medium.ttf"),
-                                            font_size: DRAWING_ZONE_STYLE / 2.0,
+                                            font_size: DRAWING_ZONE_STYLE,
                                             color: Color::WHITE,
-                                        },
-                                        TextAlignment {
-                                            ..Default::default()
                                         },
                                     ),
                                     ..Default::default()
@@ -206,7 +203,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     style: Style {
                         size: Size::new(Val::Px(150.0), Val::Px(CLEAR_BUTTON_HEIGHT)),
                         // center button
-                        margin: Rect {
+                        margin: UiRect {
                             left: Val::Auto,
                             top: Val::Px(CLEAR_BUTTON_HEIGHT / 3.),
                             right: Val::Auto,
@@ -223,15 +220,12 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 })
                 .with_children(|parent| {
                     parent.spawn_bundle(TextBundle {
-                        text: Text::with_section(
+                        text: Text::from_section(
                             "Clear",
                             TextStyle {
                                 font: asset_server.load("FiraMono-Medium.ttf"),
                                 font_size: CLEAR_BUTTON_HEIGHT * 2. / 3.,
                                 color: Color::rgb(0.9, 0.9, 0.9),
-                            },
-                            TextAlignment {
-                                ..Default::default()
                             },
                         ),
                         ..Default::default()
@@ -271,14 +265,14 @@ fn drawing_mouse(
                     for i in 0..steps {
                         let lerped =
                             last_mouse_position.lerp(event.position, i as f32 / steps as f32);
-                        let x = lerped.x - transform.translation.x + width / 2.;
-                        let y = lerped.y - transform.translation.y + height / 2.;
+                        let x = lerped.x - transform.translation().x + width / 2.;
+                        let y = lerped.y - transform.translation().y + height / 2.;
 
                         texture_events.send(Event::Draw(Vec2::new(x, y)));
                     }
                 } else {
-                    let x = event.position.x - transform.translation.x + width / 2.;
-                    let y = event.position.y - transform.translation.y + height / 2.;
+                    let x = event.position.x - transform.translation().x + width / 2.;
+                    let y = event.position.y - transform.translation().y + height / 2.;
                     texture_events.send(Event::Draw(Vec2::new(x, y)));
                 }
 
@@ -311,8 +305,8 @@ fn drawing_touch(
             if let PredictionState::Wait = state.prediction_state {
                 texture_events.send(Event::Clear);
             }
-            let x = event.position.x - transform.translation.x + width / 2.;
-            let y = event.position.y - transform.translation.y + height / 2.;
+            let x = event.position.x - transform.translation().x + width / 2.;
+            let y = event.position.y - transform.translation().y + height / 2.;
             texture_events.send(Event::Draw(Vec2::new(x, y)));
         }
     }
@@ -438,7 +432,7 @@ fn infer(
             )
             .into();
 
-            if let Some(model) = models.get(state.model.as_weak::<OnnxModel>()) {
+            if let Some(model) = models.get(&state.model.as_weak::<OnnxModel>()) {
                 let result = model.model.run(tvec!(image)).unwrap();
 
                 if let Some((value, score)) = result[0]
