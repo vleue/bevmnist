@@ -9,7 +9,7 @@ publish = false
 [dependencies]
 anyhow = "1.0"
 
-tract-onnx = "0.17"
+tract-onnx = "0.18"
 
 bevy = { version = "0.8", default-features = false, features = ["bevy_winit", "render", "png", "bevy_asset"]  }
 
